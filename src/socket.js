@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
+const SERVER_URL = window.APP_CONFIG?.SERVER_URL || process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
 
 // Create a socket wrapper that can be updated
 class SocketWrapper {
