@@ -1,31 +1,46 @@
-// server/server.js
+// npx serve -s build
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const cors = require('cors'); // Import CORS
-const { tr } = require('framer-motion/client');
-const { p } = require('framer-motion/m');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 
-// Enable CORS for the backend (allow frontend from http://localhost:3000)
-app.use(cors({
-    origin: 'http://localhost:3000',  // The frontend's URL
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-}));
+// Environment variables
+const PORT = process.env.PORT || 4000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-// Set up Socket.io with CORS configuration
+
+const corsOptions ={
+    origin:'*', 
+    credentials:true,            //access-control-allow-credentials:true
+    optionSuccessStatus:200
+}
+app.use(cors(corsOptions));
+
+
 const io = socketIo(server, {
     cors: {
-        origin: 'http://localhost:3000',  // The frontend's URL
+        origin: '*',
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type'],
+        credentials: false
     }
 });
 
-
+// Serve static files from React build in production
+if (NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../build')));
+    
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    });
+}
 
 
 
@@ -73,6 +88,7 @@ io.on('connection', (socket) => {
             playerIndexCounter = i;
             players[i] = socket.id;
 
+            console.log(`Player ${socket.id} connected as Player ${playerIndexCounter + 1}`);
             socket.emit('PlayerIndex', playerIndexCounter);   //io emits to all clients socket to one
             io.emit("PlayerInfo", [...players]);
             break;
@@ -574,9 +590,9 @@ function cardValue(card) {
 // Serve static files (if needed) or handle routes here
 app.use(express.static('public'));
 
-// Start server on port 4000
-server.listen(4000, () => {
-    console.log('Server is running on port 4000');
+// Start server on the specified port
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
 });
 
 function resetGameState(hard = false) {
