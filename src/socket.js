@@ -1,14 +1,7 @@
 import { io } from "socket.io-client";
 
-
-
 const SERVER_URL = window.APP_CONFIG?.SERVER_URL;
 console.log('[Socket] SERVER_URL:', SERVER_URL);
-
-// Create a socket wrapper that can be updated
-
-import { io } from "socket.io-client";
-
 
 const socket = io(SERVER_URL, {
   autoConnect: true,
