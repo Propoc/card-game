@@ -15,7 +15,9 @@ socket.on('connect', () => {
 });
 socket.on('connect_error', (err) => {
   console.error('[Socket] Connection error:', err);
-  console.error('[Socket] Connection error:', err.code);
+  if (err && err.code) {
+    console.error('[Socket] Error code:', err.code);
+  }
   if (err && err.message) {
     console.error('[Socket] Error message:', err.message);
   }
