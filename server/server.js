@@ -15,7 +15,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 
 const corsOptions ={
-    origin: ['*'],
+    origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
     methods: ['GET', 'POST'],
     credentials: false,       
 }
@@ -24,7 +24,7 @@ app.use(cors(corsOptions));
 
 const io = socketIo(server, {
     cors: {
-        origin: ['*'],
+        origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
         methods: ['GET', 'POST'],
         credentials: false,       
     }
