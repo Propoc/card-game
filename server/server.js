@@ -15,36 +15,29 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // CORS configuration
 const corsOptions = {
-    origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
+    origin: '*',
     methods: ['GET', 'POST'],
     credentials: false,       
 }
 app.use(cors(corsOptions));
 
-// Initialize Socket.IO with explicit path
+// Initialize Socket.IO with proper configuration
 const io = require('socket.io')(server, {
-    path: '/socket.io/',
     cors: {
         origin: '*',
-        methods: ['GET', 'POST']
+        methods: ['GET', 'POST'],
+        credentials: false
     },
+    transports: ['polling', 'websocket'],
     allowEIO3: true
 });
 
-// DEBUGGING: Add request logger to see ALL requests
+// Request logger (simplified)
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-});
-
-// NUCLEAR OPTION: Handle Socket.IO at the server level, before Express
-server.on('request', (req, res) => {
-    // Check if this is a Socket.IO request
-    if (req.url && req.url.startsWith('/socket.io/')) {
-        console.log('🔌 Raw Socket.IO request detected:', req.url);
-        // Let Socket.IO engine handle it - don't interfere
-        return;
+    if (!req.url.startsWith('/socket.io/')) {
+        console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     }
+    next();
 });
 
 // Static file serving
@@ -68,16 +61,8 @@ app.get('/test', (req, res) => {
     });
 });
 
-// React app catch-all - ONLY for non-socket.io requests
+// React app catch-all - only for non-API, non-static, non-socket.io requests
 app.get('*', (req, res) => {
-    // Absolute final check
-    if (req.path.includes('socket.io')) {
-        console.log('❌ Socket.IO request reached catch-all - this should not happen!');
-        console.log('Request path:', req.path);
-        console.log('Request URL:', req.url);
-        return res.status(404).send('Socket.IO handler not found');
-    }
-    
     console.log('📄 Serving React app for:', req.path);
     res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
