@@ -1,0 +1,30 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - cd server
+        - npm ci
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+        - cd server && npm ci
+    build:
+      commands:
+        - npm run build
+        - mkdir -p build/server
+        - cp -r server/* build/server/
+        - cp server/package.json build/server/
+    postBuild:
+      commands:
+        - echo "Build completed"
+  artifacts:
+    baseDirectory: build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - server/node_modules/**/*

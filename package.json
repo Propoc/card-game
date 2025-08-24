@@ -23,10 +23,12 @@
     "dev": "nodemon server/server.js",
     "build": "react-scripts build",
     "build:prod": "REACT_APP_SERVER_URL=https://your-domain.com npm run build",
+    "build:full": "npm run build && mkdir -p build/server && cp -r server/* build/server/ && cp server/package.json build/server/",
     "server": "node server/server.js",
     "server:dev": "nodemon server/server.js",
     "install:server": "cd server && npm install",
     "heroku-postbuild": "npm run build",
+    "amplify-postbuild": "npm run build:full",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

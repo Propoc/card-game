@@ -15,15 +15,19 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 
 const corsOptions ={
-    origin:'*', 
-    credentials:false,       
+    origin: NODE_ENV === 'production' ? 
+        ['https://*.amplifyapp.com', 'https://your-domain.com'] : 
+        ['http://localhost:3000', 'http://127.0.0.1:3000'], 
+    credentials: false,       
 }
 app.use(cors(corsOptions));
 
 
 const io = socketIo(server, {
     cors: {
-        origin: '*',
+        origin: NODE_ENV === 'production' ? 
+            ['https://*.amplifyapp.com', 'https://your-domain.com'] : 
+            ['http://localhost:3000', 'http://127.0.0.1:3000'],
         methods: ['GET', 'POST'],
         credentials: false
     }
@@ -574,8 +578,48 @@ function cardValue(card) {
 
 
 
-// Serve static files (if needed) or handle routes here
-app.use(express.static('public'));
+// Serve static files from React build in production
+if (NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../build')));
+    
+    // API info page for direct server access
+    app.get('/api', (req, res) => {
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Card Game Server</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+                    .container { max-width: 600px; margin: 0 auto; }
+                    h1 { color: #333; }
+                    p { color: #666; line-height: 1.6; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🎮 Card Game Server</h1>
+                    <p>This is the backend server for the Card Game application.</p>
+                    <p>The server is running and ready to handle WebSocket connections.</p>
+                    <p><strong>Server Status:</strong> Online</p>
+                    <p><strong>Environment:</strong> ${NODE_ENV}</p>
+                    <p><strong>Port:</strong> ${PORT}</p>
+                    <hr>
+                    <p>To play the game, visit the main application.</p>
+                </div>
+            </body>
+            </html>
+        `);
+    });
+    
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    });
+} else {
+    // Development mode - serve static files from public directory
+    app.use(express.static('public'));
+}
 
 // Start server on the specified port
 server.listen(PORT, () => {
