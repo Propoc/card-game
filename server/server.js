@@ -16,8 +16,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const corsOptions ={
     origin:'*', 
-    credentials:true,            //access-control-allow-credentials:true
-    optionSuccessStatus:200
+    credentials:false,       
 }
 app.use(cors(corsOptions));
 
@@ -26,20 +25,9 @@ const io = socketIo(server, {
     cors: {
         origin: '*',
         methods: ['GET', 'POST'],
-        allowedHeaders: ['Content-Type'],
         credentials: false
     }
 });
-
-// Serve static files from React build in production
-if (NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../build')));
-    
-    // Handle React routing, return all requests to React app
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../build', 'index.html'));
-    });
-}
 
 
 
