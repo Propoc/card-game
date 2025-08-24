@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Environment variables
-const PORT = process.env.PORT || 4000;
+const PORT = 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 
@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
     if (inGame) {
         console.log(`Player ${socket.id} tried to connect but game already started.`);
         socket.emit('PlayerIndex', -1);
-        socket.disconnect(true); // <-- This forcibly disconnects the client
+        socket.disconnect(true);
         return;
     }
 
@@ -571,56 +571,6 @@ function cardValue(card) {
     return parseInt(val, 10); // for '2'...'10'
 }
 
-
-
-// Serve static files from React build in production
-if (NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../build')));
-    
-    // API info page for direct server access
-    app.get('/api', (req, res) => {
-        res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Card Game Server</title>
-                <style>
-                    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-                    .container { max-width: 600px; margin: 0 auto; }
-                    h1 { color: #333; }
-                    p { color: #666; line-height: 1.6; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>🎮 Card Game Server</h1>
-                    <p>This is the backend server for the Card Game application.</p>
-                    <p>The server is running and ready to handle WebSocket connections.</p>
-                    <p><strong>Server Status:</strong> Online</p>
-                    <p><strong>Environment:</strong> ${NODE_ENV}</p>
-                    <p><strong>Port:</strong> ${PORT}</p>
-                    <hr>
-                    <p>To play the game, visit the main application.</p>
-                </div>
-            </body>
-            </html>
-        `);
-    });
-    
-    // Handle React routing, return all requests to React app
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../build', 'index.html'));
-    });
-} else {
-    // Development mode - serve static files from public directory
-    app.use(express.static('public'));
-}
-
-// Start server on the specified port
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
-});
-
 function resetGameState(hard = false) {
     inGame = false;
     pile = [];
@@ -644,3 +594,33 @@ function resetGameState(hard = false) {
         console.log('Game has been reset and all clients will reconnect.');
     }
 }
+
+
+
+if (NODE_ENV === 'production') {
+
+    app.use(express.static(path.join(__dirname, '../build')));
+    
+
+    
+    app.get('*', (req, res) => {
+        if (req.path.startsWith('/socket.io/')) {
+            return;
+        }
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    });
+    
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    });
+} else {
+    app.use(express.static('public'));
+}
+
+
+
+
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
+});
+
