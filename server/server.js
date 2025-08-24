@@ -598,22 +598,44 @@ function resetGameState(hard = false) {
 
 
 if (NODE_ENV === 'production') {
-
     app.use(express.static(path.join(__dirname, '../build')));
     
-
-    
-    app.get('*', (req, res) => {
-        if (req.path.startsWith('/socket.io/')) {
-            return;
-        }
-        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    // API info page for direct server access
+    app.get('/api', (req, res) => {
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Card Game Server</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+                    .container { max-width: 600px; margin: 0 auto; }
+                    h1 { color: #333; }
+                    p { color: #666; line-height: 1.6; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🎮 Card Game Server</h1>
+                    <p>This is the backend server for the Card Game application.</p>
+                    <p>The server is running and ready to handle WebSocket connections.</p>
+                    <p><strong>Server Status:</strong> Online</p>
+                    <p><strong>Environment:</strong> ${NODE_ENV}</p>
+                    <p><strong>Port:</strong> ${PORT}</p>
+                    <hr>
+                    <p>To play the game, visit the main application.</p>
+                </div>
+            </body>
+            </html>
+        `);
     });
     
-    app.get('*', (req, res) => {
+    // Handle React routing, but exclude socket.io routes
+    app.get(/^(?!\/socket\.io).*/, (req, res) => {
         res.sendFile(path.join(__dirname, '../build', 'index.html'));
     });
 } else {
+    // Development mode - serve static files from public directory
     app.use(express.static('public'));
 }
 
