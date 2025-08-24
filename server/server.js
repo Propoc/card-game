@@ -28,8 +28,6 @@ const io = require('socket.io')(server, {
         methods: ['GET', 'POST'],
         credentials: false
     },
-    transports: ['polling', 'websocket'],
-    allowEIO3: true
 });
 
 // Request logger (simplified)

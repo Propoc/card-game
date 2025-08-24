@@ -15,11 +15,15 @@ socket.on('connect', () => {
 });
 socket.on('connect_error', (err) => {
   console.error('[Socket] Connection error:', err);
+  console.error('[Socket] Connection error:', err.code);
   if (err && err.message) {
     console.error('[Socket] Error message:', err.message);
   }
   if (err && err.stack) {
     console.error('[Socket] Error stack:', err.stack);
+  }
+  if (err && err.context) {
+    console.error('[Socket] Error context:', err.context);
   }
 });
 socket.on('disconnect', (reason) => {
