@@ -13,71 +13,74 @@ const server = http.createServer(app);
 const PORT = 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-
-const corsOptions ={
-    origin: '*',
+// CORS configuration
+const corsOptions = {
+    origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
     methods: ['GET', 'POST'],
     credentials: false,       
 }
 app.use(cors(corsOptions));
 
-
+// Initialize Socket.IO with explicit path
 const io = require('socket.io')(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-    credentials: false,   
-  }
-
-
+    path: '/socket.io/',
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    },
+    allowEIO3: true
 });
 
-// CRITICAL: Add middleware to intercept Socket.IO requests BEFORE static file serving
-app.use('/socket.io/*', (req, res, next) => {
-    console.log('Socket.IO request intercepted by middleware:', req.path);
-    // Don't call next() - this prevents the request from reaching other routes
-    // Socket.IO will handle this request directly
+// DEBUGGING: Add request logger to see ALL requests
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
 });
 
-// Always serve static files and routes (removed NODE_ENV check)
+// NUCLEAR OPTION: Handle Socket.IO at the server level, before Express
+server.on('request', (req, res) => {
+    // Check if this is a Socket.IO request
+    if (req.url && req.url.startsWith('/socket.io/')) {
+        console.log('🔌 Raw Socket.IO request detected:', req.url);
+        // Let Socket.IO engine handle it - don't interfere
+        return;
+    }
+});
+
 // Static file serving
 app.use(express.static(path.join(__dirname, '../build')));
 
 // API route
 app.get('/api', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Card Game Server</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-                .container { max-width: 600px; margin: 0 auto; }
-                h1 { color: #333; }
-                p { color: #666; line-height: 1.6; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🎮 Card Game Server</h1>
-                <p>This is the backend server for the Card Game application.</p>
-                <p>The server is running and ready to handle WebSocket connections.</p>
-                <p><strong>Server Status:</strong> Online</p>
-                <p><strong>Port:</strong> ${PORT}</p>
-                <hr>
-                <p>To play the game, visit the main application.</p>
-            </div>
-        </body>
-        </html>
-    `);
+    res.json({
+        status: 'online',
+        message: 'Card Game Server',
+        port: PORT,
+        socketio: 'enabled'
+    });
 });
 
-// React app routes - now Socket.IO is already handled above
+// Test route to verify server is working
+app.get('/test', (req, res) => {
+    res.json({ 
+        message: 'Server is working!',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// React app catch-all - ONLY for non-socket.io requests
 app.get('*', (req, res) => {
-    console.log('Serving React app for:', req.path);
+    // Absolute final check
+    if (req.path.includes('socket.io')) {
+        console.log('❌ Socket.IO request reached catch-all - this should not happen!');
+        console.log('Request path:', req.path);
+        console.log('Request URL:', req.url);
+        return res.status(404).send('Socket.IO handler not found');
+    }
+    
+    console.log('📄 Serving React app for:', req.path);
     res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
-
 
 
 

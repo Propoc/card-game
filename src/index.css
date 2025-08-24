@@ -15,20 +15,6 @@ code {
 }
 
 
-@font-face {
-  font-family: 'xkcd';
-  src: url('fonts/xkcd.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'xkcd';
-  src: url('fonts/xkcd-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-}
-
 .top-barx {
     background: linear-gradient(
     315deg,
