@@ -15,9 +15,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 
 const corsOptions ={
-    origin: NODE_ENV === 'production' ? 
-        ['https://*.amplifyapp.com', 'https://your-domain.com'] : 
-        ['http://localhost:3000', 'http://127.0.0.1:3000'], 
+    origin: ['*'],
+    methods: ['GET', 'POST'],
     credentials: false,       
 }
 app.use(cors(corsOptions));
@@ -25,11 +24,9 @@ app.use(cors(corsOptions));
 
 const io = socketIo(server, {
     cors: {
-        origin: NODE_ENV === 'production' ? 
-            ['https://*.amplifyapp.com', 'https://your-domain.com'] : 
-            ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        origin: ['*'],
         methods: ['GET', 'POST'],
-        credentials: false
+        credentials: false,       
     }
 });
 

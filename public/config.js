@@ -1,3 +1,3 @@
 window.APP_CONFIG = {
-  SERVER_URL: 'http://localhost:4000'
+  SERVER_URL: 'https://master.d1zvkss672qhs2.amplifyapp.com'
 };
