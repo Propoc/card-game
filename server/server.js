@@ -15,7 +15,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 
 const corsOptions ={
-    origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
+    origin: '*',
     methods: ['GET', 'POST'],
     credentials: false,       
 }
@@ -25,7 +25,66 @@ app.use(cors(corsOptions));
 const io = require('socket.io')(server, {
   cors: {
     origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: false,   
   }
+
+  
+});
+if (NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../build')));
+    
+    // API info page
+    app.get('/api', (req, res) => {
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Card Game Server</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+                    .container { max-width: 600px; margin: 0 auto; }
+                    h1 { color: #333; }
+                    p { color: #666; line-height: 1.6; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🎮 Card Game Server</h1>
+                    <p>This is the backend server for the Card Game application.</p>
+                    <p>The server is running and ready to handle WebSocket connections.</p>
+                    <p><strong>Server Status:</strong> Online</p>
+                    <p><strong>Environment:</strong> ${NODE_ENV}</p>
+                    <p><strong>Port:</strong> ${PORT}</p>
+                    <hr>
+                    <p>To play the game, visit the main application.</p>
+                </div>
+            </body>
+            </html>
+        `);
+    });
+    
+    // EXPLICIT exclusion of socket.io routes with a function check
+    app.get('*', (req, res) => {
+        // Explicitly check for socket.io paths and skip them
+        if (req.path.includes('/socket.io')) {
+            console.log('Socket.IO request bypassed Express routing:', req.path);
+            return; // Let Socket.IO handle it
+        }
+        
+        console.log('Serving React app for:', req.path);
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    });
+    
+} else {
+    // Development mode
+    app.use(express.static('public'));
+}
+
+
+
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
 });
 
 
@@ -595,54 +654,4 @@ function resetGameState(hard = false) {
     }
 }
 
-
-
-if (NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../build')));
-    
-    // API info page for direct server access
-    app.get('/api', (req, res) => {
-        res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Card Game Server</title>
-                <style>
-                    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-                    .container { max-width: 600px; margin: 0 auto; }
-                    h1 { color: #333; }
-                    p { color: #666; line-height: 1.6; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>🎮 Card Game Server</h1>
-                    <p>This is the backend server for the Card Game application.</p>
-                    <p>The server is running and ready to handle WebSocket connections.</p>
-                    <p><strong>Server Status:</strong> Online</p>
-                    <p><strong>Environment:</strong> ${NODE_ENV}</p>
-                    <p><strong>Port:</strong> ${PORT}</p>
-                    <hr>
-                    <p>To play the game, visit the main application.</p>
-                </div>
-            </body>
-            </html>
-        `);
-    });
-    
-    // Handle React routing, but exclude socket.io routes
-    app.get(/^(?!\/socket\.io).*/, (req, res) => {
-        res.sendFile(path.join(__dirname, '../build', 'index.html'));
-    });
-} else {
-    // Development mode - serve static files from public directory
-    app.use(express.static('public'));
-}
-
-
-
-
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
-});
 
