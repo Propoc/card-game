@@ -4,6 +4,7 @@
   "description": "Backend server for card game",
   "main": "server.js",
   "scripts": {
+    "build": "CI='' react-scripts build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

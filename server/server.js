@@ -12,7 +12,6 @@ const server = http.createServer(app);
 // Environment variables
 const PORT = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 
 const corsOptions ={
