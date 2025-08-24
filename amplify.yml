@@ -1,4 +1,4 @@
-kkversion: 1
+version: 1
 applications:
   - appRoot: .
     frontend:
@@ -6,7 +6,7 @@ applications:
         preBuild:
           commands:
             - npm ci
-            - cd server && npm ci && cd ..
+            - cd server && npm install && cd ..
         build:
           commands:
             - npm run build
