@@ -32,27 +32,53 @@ const io = require('socket.io')(server, {
 
 });
 
-c
+// CRITICAL: Add middleware to intercept Socket.IO requests BEFORE static file serving
+app.use('/socket.io/*', (req, res, next) => {
+    console.log('Socket.IO request intercepted by middleware:', req.path);
+    // Don't call next() - this prevents the request from reaching other routes
+    // Socket.IO will handle this request directly
+});
+
+// Always serve static files and routes (removed NODE_ENV check)
+// Static file serving
 app.use(express.static(path.join(__dirname, '../build')));
 
 // API route
 app.get('/api', (req, res) => {
-    // your existing API response
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Card Game Server</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+                .container { max-width: 600px; margin: 0 auto; }
+                h1 { color: #333; }
+                p { color: #666; line-height: 1.6; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🎮 Card Game Server</h1>
+                <p>This is the backend server for the Card Game application.</p>
+                <p>The server is running and ready to handle WebSocket connections.</p>
+                <p><strong>Server Status:</strong> Online</p>
+                <p><strong>Port:</strong> ${PORT}</p>
+                <hr>
+                <p>To play the game, visit the main application.</p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
-// Catch all EXCEPT socket.io - be very explicit
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../build', 'index.html')));
-app.get('/game', (req, res) => res.sendFile(path.join(__dirname, '../build', 'index.html')));
-app.get('/lobby', (req, res) => res.sendFile(path.join(__dirname, '../build', 'index.html')));
-// Add other specific routes your React app uses
-
-// Final catch-all that explicitly excludes socket.io
+// React app routes - now Socket.IO is already handled above
 app.get('*', (req, res) => {
-    if (!req.path.startsWith('/socket.io')) {
-        res.sendFile(path.join(__dirname, '../build', 'index.html'));
-    }
-    // If it IS a socket.io path, don't respond - let Socket.IO handle it
+    console.log('Serving React app for:', req.path);
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
+
+
 
 
 server.listen(PORT, () => {
