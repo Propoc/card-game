@@ -22,12 +22,10 @@ const corsOptions ={
 app.use(cors(corsOptions));
 
 
-const io = socketIo(server, {
-    cors: {
-        origin: ['https://master.d1zvkss672qhs2.amplifyapp.com'],
-        methods: ['GET', 'POST'],
-        credentials: false,       
-    }
+const io = require('socket.io')(server, {
+  cors: {
+    origin: '*',
+  }
 });
 
 
