@@ -1,5 +1,5 @@
 window.APP_CONFIG = {
-  SERVER_URL: 'https://api.www.nemli.site/'  //http for local
+  SERVER_URL: 'https://api.nemli.site/'  //http for local
 };
 
 //git log --oneline 
