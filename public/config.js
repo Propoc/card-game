@@ -1,10 +1,10 @@
 window.APP_CONFIG = {
-  SERVER_URL: 'https://api.nemli.site/'  //http for local
+  SERVER_URL: 'https://api.nemli.site/'
 };
 
 //git log --oneline 
 //git reset --hard xd
-//gt push --force
+//git push --force
 
 
 //ssh -i .\cardpair.pem ubuntu@63.179.188.199

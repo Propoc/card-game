@@ -1,12 +1,11 @@
 function FanTheCards({
   hand,
   angleSpread = 15,  
-  way = 0 // 0 is circular, 1 is smooth sine, 2 is vertical   
+  way = 0 // 0 is circular, 1 is smooth sine  
 }) {
 
   let approach = way;
   let cardWidth = 200; //HARD CODED
-  let cardHeight = 200*1.4;
   let cardOverlap = 0.6;  //How many percent covers the other card
   let output = [];
 
@@ -18,22 +17,43 @@ function FanTheCards({
     
     // Calculate radius for a more natural arc
     const handSpan = cardDistance * (totalCards - 1);
-    const radius = handSpan / (2 * Math.sin(totalAngle * Math.PI / 360));
+    let radius;
     
+
+    // Prevent division by zero when angleSpread is 0 or only one card
+    if (angleSpread === 0 || totalCards === 1) {
+      radius = Infinity; // Cards will be in a straight line or single card centered
+    } else {
+      radius = handSpan / (2 * Math.sin(totalAngle * Math.PI / 360));
+    }
+
     hand.forEach((card, index) => {
-      // Calculate angle for this card (-totalAngle/2 to +totalAngle/2)
-      const angleStep = totalAngle / (totalCards - 1);
-      const cardAngle = -totalAngle/2 + (index * angleStep);
-      const radians = cardAngle * Math.PI / 180;
+
       
-      // Position on the arc
-      const valx = radius * Math.sin(radians);
-      const valy = radius - radius * Math.cos(radians); // Positive to arc downward
-      
-      // Rotation follows the arc tangent
-      const rot = cardAngle;
-      
-      output[index] = [valx, valy-110, rot];
+  let valx, valy, rot;
+
+      if (totalCards === 1) {
+        // Center the single card, no rotation
+        valx = 0;
+        valy = 0;
+        rot = 0;
+      } else {
+        // Calculate angle for this card (-totalAngle/2 to +totalAngle/2)
+        const angleStep = totalAngle / (totalCards - 1);
+        const cardAngle = -totalAngle / 2 + (index * angleStep);
+        const radians = cardAngle * Math.PI / 180;
+
+        if (!isFinite(radius)) {
+          valx = cardDistance * (index - (totalCards - 1) / 2);
+          valy = 0;
+        } else {
+          valx = radius * Math.sin(radians);
+          valy = radius - radius * Math.cos(radians);
+        }
+        rot = cardAngle;
+      }
+
+      output[index] = [valx, valy - 110, rot];
     });
     
     return output;

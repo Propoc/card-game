@@ -150,7 +150,6 @@ io.on('connection', (socket) => {
         }
 
 
-
         // Send hands to each player
         players.forEach((socketId, idx) => {
             io.to(socketId).emit('PlayerHand', hands[idx]);
@@ -215,7 +214,17 @@ io.on('connection', (socket) => {
 
     });
 
+    let throwInProgress = false;
     socket.on('throwCards', async ({cards}) => {
+        if (throwInProgress) {
+        socket.emit('feedback', 'Server is processing another throw. Please wait.');
+        return;
+        }
+
+        throwInProgress = true;
+        try {
+
+
         const pIndex = players.indexOf(socket.id);
         const playerCount = players.filter(Boolean).length;
 
@@ -396,6 +405,11 @@ io.on('connection', (socket) => {
         setTimeout(() => {
             fastlock = false;
         }, 500);
+
+        }
+        finally {
+            throwInProgress = false;
+        }
 
     });
 
