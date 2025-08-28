@@ -483,12 +483,31 @@ function isValidThrow(cards , socket) {
     }
 
 
+    // Not your Turn but Jump In
+    if (turn !== pIndex) {
+        // Cant jump in with a 4 stack
+        if (pile.length > 0 && cards.length !== 4) {
+
+            const thrownValue = cardValue(cards[0]);
+            const tempPile = [...pile, ...cards];
+            const lastFour = tempPile.slice(-4);
+
+            if ( lastFour.length === 4 && lastFour.every(card => cardValue(card) === thrownValue)) {
+                if (passedPlayer === pIndex) {
+                    socket.emit('feedback', 'You are passed and cannot jump in!');
+                    return false;
+                }
+                jumpin = true;
+                return true;
+            }
+        }
+        socket.emit('feedback', 'Not your turn!');
+        return false;
+    }
+
+
     // 1. First Card Must be "s3"
     if (!firstCardPlayed){
-        if (turn !== pIndex) {
-            socket.emit('feedback', 'Not your turn!');
-            return false;
-        }
         if (cards.length === 1 && cards[0] === "s3") {
             firstCardPlayed = true;
             return true;
@@ -496,32 +515,6 @@ function isValidThrow(cards , socket) {
             socket.emit('feedback', 'First card must be only "s3"!');
             return false;
         }
-    }
-
-    // Not your Turn but Jump In
-    if (turn !== pIndex) {
-        // Cant jump in with a 4 stack
-        if (pile.length > 0 && cards.length !== 4) {
-            const thrownVal = cardValue(cards[0]);
-
-            const tempPile = [...pile, ...cards];
-            const lastFour = tempPile.slice(-4);
-
-            if (
-                lastFour.length === 4 &&
-                lastFour.every(card => cardValue(card) === thrownVal)
-            ) {
-                if (passedPlayer === pIndex) {
-                    socket.emit('feedback', 'You are passed and cannot jump in!');
-                    return false;
-                }
-                jumpin = true;
-                return true;
-
-            }
-        }
-        socket.emit('feedback', 'Not your turn!');
-        return false;
     }
 
     // 2 Clears the stack
@@ -539,51 +532,32 @@ function isValidThrow(cards , socket) {
 
     // Check Throwing
     if (pile.length > 0) {
-        const thrownValue = cardValue(cards[0]);
+
         const lastValue = cardValue(lastThrownCards[0]);
+        const thrownValue = cardValue(cards[0]);
+        const tempPile = [...pile, ...cards];
+        const lastFour = tempPile.slice(-4);
+        if ( lastFour.length === 4 && lastFour.every(card => cardValue(card) === thrownValue)) {
+            stackCleared = true;
+            return true;
+        }
+
+        if (cards.length === 1 && thrownValue === lastValue) {
+            pass = true;
+            return true;
+        }
 
 
         if (cards.length < lastThrownCards.length) {
-            if (thrownValue === lastValue) {
-                // Check first if 4 stack is achieved if not pass the player
-                const tempPile = [...pile, ...cards];
-                const lastFour = tempPile.slice(-4);
-                if (  lastFour.length === 4 && lastFour.every(card => cardValue(card) === thrownValue)) {
-                    stackCleared = true;
-                    return true;
-                }
-                else {
-                    pass = true;
-                    return true;
-                }
-            }
-            else {
-                socket.emit('feedback', 'Needs to be same value if less than stack!');
-                return false;
-            }
-
+            socket.emit('feedback', 'Needs to be same value if less than stack!');
+            return false;
         } 
 
 
         else if (cards.length === lastThrownCards.length) {
             if (thrownValue < lastValue) {
-                socket.emit('feedback', 'If matching the stack you must throw equal or more value card!');
+                socket.emit('feedback', 'If matching the stack you must throw with more value');
                 return false;
-            }
-            else if (thrownValue === lastValue) {
-                
-                const tempPile = [...pile, ...cards];
-                const lastFour = tempPile.slice(-4);
-                if ( lastFour.length === 4 && lastFour.every(card => cardValue(card) === thrownValue)) {
-                    stackCleared = true;
-                    return true;
-                }
-                // That only leaves 1 card on 1
-                else {
-                    pass = true;
-                    return true;
-                }
-
             }
             else {
                 return true;
@@ -592,20 +566,8 @@ function isValidThrow(cards , socket) {
 
 
         else {
-            // 3 Stack at > 2,1 if same value must be the last card clear
-            if (cards.length === 3) {
-                if (thrownValue == lastValue){
-                    stackCleared = true;
-                    return true;
-                }
-                return true;
-            }
-            // 2 Stack at > 1 no extra condition on same value
-            else {
-               return true;
-            }
-
-
+            // No special condition just goes
+            return true;
         }
 
 
