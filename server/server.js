@@ -96,9 +96,12 @@ let firstCardPlayed = false;
 let stackCleared = false;
 let pass = false;
 let jumpin = false;
-let passedPlayer = null;
+
 let lock = false;
 let fastlock = false;
+
+let passedPlayer = null;
+
 let recentpass = null;
 
 io.on('connection', (socket) => {
@@ -181,6 +184,11 @@ io.on('connection', (socket) => {
         const pIndex = players.indexOf(socket.id);
         const playerCount = players.filter(Boolean).length;
 
+        // Pass is a viable turn clear the passed player.
+        passedPlayer = null;
+        io.emit('PassedPlayerInfo', passedPlayer);
+
+
         socket.emit('feedback', 'You passed your turn.');
         players.forEach((id) => {
             if (id !== pIndex) {
@@ -198,7 +206,7 @@ io.on('connection', (socket) => {
             }
         }
 
-        if (recentpass === null) {recentpass = pIndex; }
+        if (recentpass === null) {recentpass = pIndex;}
 
         // If the next viable player is the one who started the pass chain, clear the pile and keep the turn at the current player
         if (nextTurn === recentpass) {
@@ -208,14 +216,15 @@ io.on('connection', (socket) => {
 
             // Turn stays at the player who just passed (pIndex)
             turn = pIndex;
+            recentpass = null;
+
             io.emit('TurnInfo', turn);
 
-            recentpass = null;
-            passedPlayer = null;
             return;
         }
 
         // Otherwise, continue the pass chain
+
         turn = nextTurn;
         io.emit('TurnInfo', turn);
     });
@@ -248,8 +257,9 @@ io.on('connection', (socket) => {
 
         //passed player cannot play or jump anyway so clear
         passedPlayer = null;
-        //viable turn so no turn back
-        recentpass = false;
+
+        //viable turn clear the pass chain
+        recentpass = null;
 
         hands[pIndex] = hands[pIndex].filter(c => !cards.includes(c));
         lastThrownCards = cards;
