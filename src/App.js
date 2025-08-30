@@ -754,15 +754,19 @@ export default function App () {
                 </motion.span>
                 
                 {playerNames[idx] && (
-                  <span className="absolute mt-4 text-amber-900 text-lg font-semibold select-none">
-                    {playerNames[idx]}
-                  </span>
+                <motion.span 
+                    className="absolute mt-12 text-amber-900 text-lg font-semibold select-none"
+                    animate={{ marginBottom: inGame ? '2rem' : '0rem' }}
+                    transition={{ duration: 1, ease: "easeInOut" }}
+                >
+                  {playerNames[idx]}
+                </motion.span>
                 )}
 
                 {inGame && (
-                  <span className="absolute bottom-2 bg-black bg-opacity-60 text-white text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center  select-none">
-                    {handSizes[idx]}
-                  </span>
+                <span className="absolute bottom-2 bg-black bg-opacity-60 text-white text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center  select-none">
+                  {handSizes[idx]}
+                </span>
                 )}
 
                 {/* Opponent Animation */}

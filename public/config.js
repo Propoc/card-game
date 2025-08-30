@@ -4,12 +4,12 @@ window.APP_CONFIG = {
 };
 
 //git log --oneline 
-//git reset --hard xd
+//git reset --hard 
 //git push --force
 
 
 //ssh -i .\cardpair.pem ubuntu@63.179.188.199
-//cd card-game/server
-//node server.js
 
-//./deploy.sh
+// git fetch origin master              (server update)
+// git reset --hard origin/master 
+// pm2 restart server.js   
