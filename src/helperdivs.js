@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 
 
 function TopBar({ turn, playerIndex }) {
@@ -58,27 +59,70 @@ function Sidebar({ onReset, onSort, sortAsc, angleSpread, setAngleSpread , arcVa
   );
 }
 
-function Lobby({ inGame, playerIndex, players, turn, handSizes, onStartGame }) {
+function Lobby({ inGame, playerIndex, players, playerNames, onStartGame, onRename}) {
+
+  const [editing, setEditing] = useState(false);
+  const [nameInput, setNameInput] = useState(players[playerIndex] || "");
+
+  const handleEditClick = (i) => {
+    if (i === playerIndex && !editing) setEditing(true);
+    else setEditing(false);
+  };
+
+  const handleInputChange = (e) => setNameInput(e.target.value);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (onRename) onRename(nameInput);
+    setEditing(false);
+  };
+
+
   return (
     <div className="lobby fixed top-20 right-0 w-60 h-1/2 bg-blue-600 flex flex-col gap-1 items-center py-4 z-10">
       <div className="w-ful text-center text-white font-bold text-2xl mb-2">
         {inGame ? "Players" : "Lobby Info"}
       </div>
+
       {players.filter(Boolean).length > 0
         ? players.map((player, i) =>
             player ? (
-            <div
-              key={i}
-              className={`player-box text-2xl w-full h-10 flex items-center justify-center font-bold
-                ${handSizes[i] === 0
-                  ? "bg-lime-500 text-black"
-                  : turn === i
-                    ? "bg-yellow-400 text-black"
-                    : "bg-fuchsia-600 text-white"
-                }`}
-            >
-              {player.slice(0, 3)} ({i + 1}){i === 0 ? " (Host)" : ""}
-            </div>
+              <div key={i} className="relative w-full flex items-center">
+                {/* Input box to the left if editing and this is the player */}
+                {editing && i === playerIndex && (
+                  <form
+                    onSubmit={handleSubmit}
+                    className="absolute left-[-160px] flex items-center"
+                    style={{ width: "150px", height: "40px" }}
+                  >
+                    <input
+                      className="w-full h-10 px-2 rounded border border-gray-400"
+                      value={nameInput}
+                      onChange={handleInputChange}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="ml-2 bg-green-500 text-white px-2 py-1 rounded"
+                    >
+                      ✔
+                    </button>
+                  </form>
+                )}
+                <div
+                  className={`player-box text-2xl w-full h-10 flex items-center justify-center font-bold transition
+                    ${i === playerIndex  ? "bg-yellow-400 text-black cursor-pointer"  : "bg-fuchsia-600 text-white cursor-default"}
+                  `}
+                  onClick={() => handleEditClick(i)}
+                  style={{ zIndex: 1 }}
+                >
+
+                  {(playerNames && playerNames[i])
+                    ? playerNames[i]
+                    : player.slice(0, 3)
+                  } ({i + 1})
+                </div>
+              </div>
             ) : null
           )
         : <div className="text-white">No players connected</div>
@@ -94,6 +138,8 @@ function Lobby({ inGame, playerIndex, players, turn, handSizes, onStartGame }) {
       )}
     </div>
   );
+
+
 }
 
 export { TopBar, Sidebar, Lobby };

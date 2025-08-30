@@ -152,6 +152,7 @@ export default function App () {
   const [inGame, setInGame] = useState(false); // Bool
   const [playerIndex, setPlayerIndex] = useState(-1); // Integer
   const [players, setPlayers] = useState([]); // String[] of names
+  const [playerNames, setPlayerNames] = useState([]); // String[] of actual names
   const [hand, setHand] = useState([]); // String[] of cards
   const [feedback, setFeedback] = useState(''); // String
   const [showFeedback, setShowFeedback] = useState(false); // Bool
@@ -160,9 +161,10 @@ export default function App () {
   const [handSizes, setHandSizes] = useState([]); // Integer[] of players hands
   const [passedPlayerInfo, setPassedPlayerInfo] = useState(null); // Integer 
   const [gameOver, setGameOver] = useState({ active: false, loser: null, twoHole: false });
+  
 
 
-
+  const [showHelp, setShowHelp] = useState(false);
   const [arcValue, setArcValue] = useState(0.25); 
   const [angleSpread, setAngleSpread] = useState(12.5);
   const [sortAsc, setSortAsc] = useState(true);
@@ -343,15 +345,12 @@ export default function App () {
   useEffect(() => {
     socket.on('PlayerIndex', (Index) => setPlayerIndex(Index));
     socket.on('PlayerInfo', (Info) => setPlayers(Info));
+    socket.on('PlayerNames', (names) => setPlayerNames(names));
     socket.on('TurnInfo', (Info) => setTurn(Info));
     socket.on('PlayerHandSizes', (sizes) => setHandSizes(sizes));
     socket.on('PassedPlayerInfo', (info) => setPassedPlayerInfo(info));
-
-
-    socket.on('ForceReconnect', () => {
-      window.location.reload();
-    });
-
+    socket.on('GameStarted', () => setInGame(true));
+    socket.on('ForceReconnect', () => {  window.location.reload();});
   }, []);
 
 
@@ -384,28 +383,24 @@ export default function App () {
       setExitingCards([]);
       setOpponentThrownAnim(false);
       setJumpInPulse(false);
+      setShowHelp(false);
     };
       socket.on('ResetState', handleResetState);
       return () => socket.off('ResetState', handleResetState);
     }, []);
 
 
-    useEffect(() => {
-    const handleInGame = () => {
-      setInGame(true);
-    };
-      socket.on('GameStarted', handleInGame);
-      return () => socket.off('GameStarted', handleInGame);
-    }, []);
 
   const handleSelectCard = (cardValue) => {
     setSelectedCards(prev =>
         prev.includes(cardValue) ? prev.filter(c => c !== cardValue) : [...prev, cardValue]
     );
   };
-  
+  const handleRename = (newName) => {
+    socket.emit('RenamePlayer', { playerIndex, newName });
+  };
   const handleStartGame = () => {
-      socket.emit('LaunchGame');
+    socket.emit('LaunchGame');
   };
   const handleResetServer = () => {
     socket.emit('ResetServer' , { hard: true });
@@ -437,12 +432,62 @@ export default function App () {
         arcValue={arcValue}
         setArcValue={setArcValue}
       />
-      <Lobby inGame={inGame} playerIndex={playerIndex} players={players} turn={turn} handSizes={handSizes} onStartGame={handleStartGame} />
+      <Lobby 
+      inGame={inGame} 
+      playerIndex={playerIndex} 
+      players={players} 
+      playerNames={playerNames} 
+      onStartGame={handleStartGame}  
+      onRename={handleRename}
+      />
 
       {/* Play Area */}
       <div className="play-area-boundary absolute" 
         style={{ top: '5rem', left: '5rem', right: '15rem',bottom: 0, }} 
       > 
+        {/* Help */}
+        <button
+          className=" absolute top-8 left-8 w-16 h-16 rounded-full border-4 border-black bg-white text-black text-4xl font-bold flex items-center justify-center shadow-lg z-[10001] hover:bg-yellow-200 transition"
+          onClick={() => setShowHelp(true)}
+          aria-label="Show Help"
+        >
+          ?
+        </button>
+
+        {showHelp && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-[10002]">
+            <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full flex flex-col items-center relative">
+              <button
+                className="absolute top-4 right-12 text-8xl font-bold text-black hover:text-red-600"
+                onClick={() => setShowHelp(false)}
+                aria-label="Close Help"
+              >
+                ×
+              </button>
+              <h1 className="text-5xl font-bold mb-6 text-yellow-600">How to Play</h1>
+              <div className="text-lg text-gray-800 text-left w-full space-y-4">
+                <p>
+                  <b>Goal:</b> Be the first to get rid of all your cards!
+                </p>
+                <ul className="list-disc ml-6">
+                  <li>You must match or beat the previous cards played. You can only throw same-valued cards.</li>
+                  <li>You beat the previous cards by throwing more cards or higher valued cards while matching the amount</li>
+                  <li>Throwing a single card with a same value as the previous ones (regardless of the amount) passes the next player</li>
+                  <li>Throwing a "2" or completing a set of four cards of the same value in the pile clears the pile and grants an extra turn </li>
+                  <li>You can jump-in even if it is not your turn if you can complete a set of four cards, robbing the turn for yourself</li>
+                  <li>Your last cards cannot be 2's or you will be the two-hole</li>
+                </ul>
+                <p>
+                  <b>Controls:</b> Left Click to select Right Click to throw<br/>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+
+
         {/* Game Over */}
           {gameOver.active && (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-[9999]">
@@ -472,10 +517,20 @@ export default function App () {
                   transition={{ duration: 0.5, delay: 1 }}
               >
                 {gameOver.twoHole && (
-                  <> OROSPU YALÇIN </>
+                  <>
+                    {playerNames[gameOver.loser]
+                      ? `${playerNames[gameOver.loser]}`
+                      : `P${gameOver.loser + 1}`
+                    } is the two-hole
+                  </>
                 )}
                 {!gameOver.twoHole && (
-                  <> {gameOver.loser + 1} lost the game <br /></>
+                  <>
+                    {playerNames[gameOver.loser]
+                      ? `${playerNames[gameOver.loser]}`
+                      : `P${gameOver.loser + 1}`
+                    } lost the game
+                  </>
                 )}
               </motion.div>
             </div>
@@ -689,13 +744,20 @@ export default function App () {
                     />
                 )}
 
+                {/* Player Number */}
                 <motion.span
-                  className="player-number text-black text-4xl font-bold  select-none"
-                  animate={{ marginBottom: inGame ? '2rem' : '0rem' }}
+                  className="absolute player-number text-black text-4xl font-bold  select-none"
+                  animate={{ marginBottom: inGame ? '3rem' : '0rem' }}
                   transition={{ duration: 1, ease: "easeInOut" }}
                 >
                   P{idx + 1}
                 </motion.span>
+                
+                {playerNames[idx] && (
+                  <span className="absolute mt-4 text-amber-900 text-lg font-semibold select-none">
+                    {playerNames[idx]}
+                  </span>
+                )}
 
                 {inGame && (
                   <span className="absolute bottom-2 bg-black bg-opacity-60 text-white text-lg font-bold rounded-full w-8 h-8 flex items-center justify-center  select-none">

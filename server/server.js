@@ -11,7 +11,6 @@ const server = http.createServer(app);
 
 // Environment variables
 const PORT = 4000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // CORS configuration
 const corsOptions = {
@@ -68,7 +67,7 @@ app.get('*', (req, res) => {
 
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
+    console.log(`Server is running on port ${PORT}`);
 });
 
 
@@ -87,6 +86,7 @@ suits.forEach(suit => {
 let inGame = false;
 let playerLimit = 8;
 let players = [];
+let playerNames = [];
 
 let pile = [];
 let lastThrownCards = [];
@@ -126,6 +126,11 @@ io.on('connection', (socket) => {
          socket.emit('PlayerIndex', -1);  
         }
     }
+
+    socket.on('RenamePlayer', ({ playerIndex, newName }) => {
+        playerNames[playerIndex] = newName;
+        io.emit("PlayerNames", playerNames);
+    });
 
 
     socket.on('LaunchGame', () => {
@@ -176,42 +181,43 @@ io.on('connection', (socket) => {
         const pIndex = players.indexOf(socket.id);
         const playerCount = players.filter(Boolean).length;
 
-        if (recentpass === pIndex) {
-            io.emit('feedback', 'Pile cleared bottled up');
-
-            pile = [];
-            io.emit('PileUpdate', pile);
-            
-            turn = players.indexOf(socket.id);
-            io.emit('TurnInfo', turn);
-        
-            recentpass = null;
-            return;
-        }
-
-
         socket.emit('feedback', 'You passed your turn.');
         players.forEach((id) => {
-        if (id !== pIndex) {
-            io.to(id).emit('feedback', `Player ${pIndex + 1} Passed`);
-        }
-        })
-        
+            if (id !== pIndex) {
+                io.to(id).emit('feedback', `Player ${pIndex + 1} Passed`);
+            }
+        });
+
+
+        let nextTurn = turn;
         for (let i = 1; i < playerCount; i++) {
             const candidate = (turn + i) % playerCount;
             if (hands[candidate].length > 0) {
-                turn = candidate;
+                nextTurn = candidate;
                 break;
             }
         }
 
-        // No turn played
-        if (!recentpass)  {recentpass = pIndex;}
-        // Also needs to be cleared
-        passedPlayer = null;
-        io.emit('PassedPlayerInfo', passedPlayer);
-        io.emit('TurnInfo', turn);
+        if (recentpass === null) {recentpass = pIndex; }
 
+        // If the next viable player is the one who started the pass chain, clear the pile and keep the turn at the current player
+        if (nextTurn === recentpass) {
+            io.emit('feedback', 'Pile cleared bottled up');
+            pile = [];
+            io.emit('PileUpdate', pile);
+
+            // Turn stays at the player who just passed (pIndex)
+            turn = pIndex;
+            io.emit('TurnInfo', turn);
+
+            recentpass = null;
+            passedPlayer = null;
+            return;
+        }
+
+        // Otherwise, continue the pass chain
+        turn = nextTurn;
+        io.emit('TurnInfo', turn);
     });
 
     let throwInProgress = false;
@@ -232,7 +238,7 @@ io.on('connection', (socket) => {
             socket.emit('feedback', 'Wait for server');
             return;
         }
-        if (fastlock && pIndex === turn) {
+        if (fastlock && pIndex === turn) {  // MAYBE DO ONLY IF A JUMP IN IS POSSIBLE
             socket.emit('feedback', 'Fast Lock in effect');
             return;
         }
@@ -423,6 +429,7 @@ io.on('connection', (socket) => {
         if (hard)
         {
             players = [];
+            playerNames = [];
             io.emit('ForceReconnect');
             console.log('Game has been reset and all clients will reconnect.');
         }
@@ -430,36 +437,37 @@ io.on('connection', (socket) => {
         
     });
 
-socket.on('disconnect', () => {
-    const index = players.indexOf(socket.id);
 
-    // Legit player with assigned index
-    if (index !== -1) {
-        players.splice(index, 1);
-        // Optionally, keep the array at playerLimit length (fill with nulls at the end)
-        while (players.length < playerLimit) {
-            players.push(null);
-        }
-        console.log(`Slot ${index} is now free and players shifted`);
 
-        resetGameState()
+    socket.on('disconnect', () => {
+        const index = players.indexOf(socket.id);
 
-        io.emit('ResetState');
-
-        io.emit("PlayerInfo", [...players]);
-
-        players.forEach((socketId, idx) => {
-            if (socketId) {
-                io.to(socketId).emit('PlayerIndex', idx);
+        // Legit player with assigned index
+        if (index !== -1) {
+            players.splice(index, 1);
+            // Optionally, keep the array at playerLimit length (fill with nulls at the end)
+            while (players.length < playerLimit) {
+                players.push(null);
             }
-        });
+            console.log(`Slot ${index} is now free and players shifted`);
 
-        io.emit('feedback', 'A player disconnected. Game has been reset.');
-    } else {
-        console.log(`Not assigned ${socket.id} left`);
-    }
+            resetGameState()
+
+            io.emit('ResetState');
+
+            io.emit("PlayerInfo", [...players]);
+
+            players.forEach((socketId, idx) => {
+                if (socketId) {
+                    io.to(socketId).emit('PlayerIndex', idx);
+                }
+            });
+
+            io.emit('feedback', 'A player disconnected. Game has been reset.');
+        } else {
+            console.log(`Not assigned ${socket.id} left`);
+        }
     });
-
 });
 
 function isValidThrow(cards , socket) {
@@ -608,6 +616,7 @@ function resetGameState(hard = false) {
 
     if (hard) {
         players = [];
+        playerNames = [];
         io.emit('ForceReconnect');
         console.log('Game has been reset and all clients will reconnect.');
     }
